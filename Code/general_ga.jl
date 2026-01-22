@@ -9,12 +9,13 @@ Base.@kwdef mutable struct GAParams
     popsize::Int = 200
     generations::Int = 10000
     pc::Float64 = 0.90
-    pm::Float64 = 0
+    pm::Float64 = 0.0
     tour_k::Int = 3
-    survivor_mode::Symbol = :elitist   # :generational or :elitist (crowding later)
+    survivor_mode::Symbol = :elitist
     elite::Int = 2
     seed::Int = 42
-    objective::Symbol = :max           # :max or :min
+    objective::Symbol = :max
+    log_every::Int = 25          
 end
 
 # ----- utilities -----
@@ -148,6 +149,13 @@ function run_ga(nbits::Int, fitness_fn::Function; params::GAParams=GAParams())
         push!(mean_hist, mean(raw))
         push!(min_hist, minimum(raw))
         push!(ent_hist, entropy_bits(pop))
+
+        if gen == 1 || gen % params.log_every == 0 || gen == params.generations
+            # For minimization, "best" is min_hist; for maximization, it's max_hist
+            best_now = params.objective === :min ? min_hist[end] : max_hist[end]
+            println("gen=$gen  best=$(round(best_now, digits=5))  mean=$(round(mean_hist[end], digits=5))  entropy=$(round(ent_hist[end], digits=3))")
+            flush(stdout)
+        end
 
         offspring = BitVector[]
         while length(offspring) < params.popsize
