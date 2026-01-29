@@ -7,12 +7,12 @@ export GAParams, run_ga, entropy_bits
 
 Base.@kwdef mutable struct GAParams
     popsize::Int = 200
-    generations::Int = 10000 
-    pc::Float64 = 0.90  #crossover prob
-    pm::Float64 = 0.0  #mutation prob
-    tour_k::Int = 3  #tournament size
-    survivor_mode::Symbol = :elitist  #elitist / generational
-    elite::Int = 2  #number of elites kept
+    generations::Int = 10000
+    pc::Float64 = 0.90
+    pm::Float64 = 0.0
+    tour_k::Int = 3
+    survivor_mode::Symbol = :elitist
+    elite::Int = 2
     seed::Int = 42
     objective::Symbol = :max
     log_every::Int = 25
@@ -79,21 +79,12 @@ survivors_generational(_parents, offspring, _score_par, _score_off, popsize::Int
 # Survivor selection B: elitist from parents+offspring (by score)
 function survivors_elitist(parents::Vector{BitVector}, offspring::Vector{BitVector},
                            score_par::Vector{Float64}, score_off::Vector{Float64},
-                           popsize::Int, elite::Int)
-    elite = clamp(elite, 0, popsize)
-
-    # 1) Keep the best `elite` parents
-    parent_idx = sortperm(score_par, rev=true)
-    elites = parents[parent_idx[1:elite]]
-
-    # 2) Fill the remaining slots with best offspring
-    remaining = popsize - elite
-    off_idx = sortperm(score_off, rev=true)
-    rest = offspring[off_idx[1:remaining]]
-
-    return vcat(elites, rest)
+                           popsize::Int)
+    combined = vcat(parents, offspring)
+    combined_score = vcat(score_par, score_off)
+    idx = sortperm(combined_score, rev=true)
+    return combined[idx[1:popsize]]
 end
-
 
 # ----- entropy (for Task 2 plots) -----
 """
@@ -199,7 +190,7 @@ function run_ga(nbits::Int, fitness_fn::Function; params::GAParams=GAParams())
         if params.survivor_mode == :generational
             pop = survivors_generational(pop, offspring, score, score_off, params.popsize)
         elseif params.survivor_mode == :elitist
-            pop = survivors_elitist(pop, offspring, score, score_off, params.popsize, params.elite)
+            pop = survivors_elitist(pop, offspring, score, score_off, params.popsize)
         elseif params.survivor_mode == :crowding
             score_fn(ind) = to_score(fitness_fn(ind), params.objective)
             pop = survivors_generalized_crowding(
