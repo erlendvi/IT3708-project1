@@ -1,0 +1,10 @@
+# Word temp files
+~$*.docx
+*.tmp
+
+# macOS
+.DS_Store
+__MACOSX/
+
+# Jupyter
+.ipynb_checkpoints/

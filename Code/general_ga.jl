@@ -2,6 +2,7 @@ module GACore
 
 using Random
 using Statistics
+using ProgressMeter
 
 export GAParams, run_ga, entropy_bits
 
@@ -143,8 +144,8 @@ function run_ga(nbits::Int, fitness_fn::Function; params::GAParams=GAParams())
 
     # helper to decide "better" in raw fitness space
     better(a, b) = params.objective === :max ? (a > b) : (a < b)
-
-    for gen in 1:params.generations
+    
+    @showprogress "Computing generations" for gen in 1:params.generations
         raw = Vector{Float64}(undef, length(pop))
         score = Vector{Float64}(undef, length(pop))
 
