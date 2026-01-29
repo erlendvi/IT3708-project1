@@ -40,8 +40,8 @@ end
 baseline_rmse = get_fitness(model, Xdf, y; rng=rng_lr)
 println("Baseline RMSE: ", baseline_rmse)
 
-params = GACore.GAParams(popsize=60, generations=200, pc=0.90, pm=0.03, tour_k=3,
-                         survivor_mode=:generational, elite=2, seed=42, objective=:min)
+params = GACore.GAParams(popsize=150, generations=200, pc=0.90, pm=0.01, tour_k=4,
+                         survivor_mode=:elitist, elite=4, seed=42, objective=:min)
 
 best_ind, best_rmse, hist = GACore.run_ga(nbits, feature_fitness; params=params)
 
