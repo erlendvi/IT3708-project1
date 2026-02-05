@@ -141,6 +141,10 @@ function run_ga(nbits::Int, fitness_fn::Function; params::GAParams=GAParams())
 
     best_ind = copy(pop[1])
     best_raw = fitness_fn(best_ind)  # raw fitness
+    
+    worst_ind = copy(pop[1])
+    worst_raw = best_raw  # initialize
+
 
     # helper to decide "better" in raw fitness space
     better(a, b) = params.objective === :max ? (a > b) : (a < b)
@@ -148,6 +152,7 @@ function run_ga(nbits::Int, fitness_fn::Function; params::GAParams=GAParams())
     @showprogress "Computing generations" for gen in 1:params.generations
         raw = Vector{Float64}(undef, length(pop))
         score = Vector{Float64}(undef, length(pop))
+        worse(a, b) = params.objective === :max ? (a < b) : (a > b)
 
         for i in eachindex(pop)
             r = fitness_fn(pop[i])
@@ -156,6 +161,10 @@ function run_ga(nbits::Int, fitness_fn::Function; params::GAParams=GAParams())
             if better(r, best_raw)
                 best_raw = r
                 best_ind = copy(pop[i])
+            end
+            if worse(r, worst_raw)
+                worst_raw = r
+                worst_ind = copy(pop[i])
             end
         end
 
@@ -195,6 +204,11 @@ function run_ga(nbits::Int, fitness_fn::Function; params::GAParams=GAParams())
             r = fitness_fn(offspring[i])
             raw_off[i] = r
             score_off[i] = to_score(r, params.objective)
+
+            if worse(r, worst_raw)
+                worst_raw = r
+                worst_ind = copy(offspring[i])
+            end
         end
 
         if params.survivor_mode == :generational
@@ -215,8 +229,8 @@ function run_ga(nbits::Int, fitness_fn::Function; params::GAParams=GAParams())
         end
     end
 
-    history = (; max_hist, mean_hist, min_hist, ent_hist)
-    return best_ind, best_raw, history
+    history = (; max_hist, mean_hist, min_hist, ent_hist, worst_raw)
+    return best_ind, best_raw, worst_ind, worst_raw, history
 end
 
 # ----- local scripts -----

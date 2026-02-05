@@ -50,15 +50,21 @@ elite = survivor_mode == :crowding ? 0 : 4
 # --------------------------------------
 
 params = GACore.GAParams(
-    popsize=150, generations=200, pc=0.90, pm=0.01, tour_k=4,
+    popsize=30, generations=50, pc=0.9, pm=0.05, tour_k=4,
     survivor_mode=survivor_mode, elite=elite, seed=42, objective=:min
 )
 
 
-best_ind, best_rmse, hist = GACore.run_ga(nbits, feature_fitness; params=params)
+best_ind, best_rmse, worst_ind, worst_rmse, hist = GACore.run_ga(nbits, feature_fitness; params=params)
 
-println("Best RMSE: ", best_rmse)
-println("Selected features: ", count(best_ind), " / ", nbits)
+println("Best RMSE:  ", best_rmse)
+println("Worst RMSE: ", worst_rmse)
+println("Selected features (best): ", count(best_ind), " / ", nbits)
+println("Selected features (worst): ", count(worst_ind), " / ", nbits)
 
-display(plot(hist.min_hist, label="min RMSE", xlabel="gen", ylabel="RMSE"))
-display(plot(hist.ent_hist, label="entropy", xlabel="gen", ylabel="H"))
+p1 = plot(hist.min_hist, label="min RMSE", xlabel="gen", ylabel="RMSE")
+plot!(p1, hist.max_hist, label="max RMSE")
+savefig(p1, "rmse.png")
+
+p2 = plot(hist.ent_hist, label="entropy", xlabel="gen", ylabel="H")
+savefig(p2, "entropy.png")
