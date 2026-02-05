@@ -8,3 +8,5 @@ __MACOSX/
 
 # Jupyter
 .ipynb_checkpoints/
+
+.png
