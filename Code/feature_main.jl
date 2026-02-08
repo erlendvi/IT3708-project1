@@ -45,26 +45,36 @@ survivor_mode = Symbol(get(ENV, "GA_SURVIVOR",
     length(ARGS) >= 1 ? ARGS[1] : "elitist"
 ))
 
-# Hvis crowding-varianten din ikke støtter elite, sett elite=0 automatisk
-elite = survivor_mode == :crowding ? 0 : 4
-# --------------------------------------
 
 params = GACore.GAParams(
-    popsize=30, generations=50, pc=0.9, pm=0.05, tour_k=4,
-    survivor_mode=survivor_mode, elite=elite, seed=42, objective=:min
+    popsize=100, generations=100, pc=0.95, pm=0.005, tour_k=4,
+    survivor_mode=survivor_mode, seed=42, elite=4, objective=:min,
+    crowding_alpha=1.0, crowding_scale=1.0
 )
 
 
 best_ind, best_rmse, worst_ind, worst_rmse, hist = GACore.run_ga(nbits, feature_fitness; params=params)
+
 
 println("Best RMSE:  ", best_rmse)
 println("Worst RMSE: ", worst_rmse)
 println("Selected features (best): ", count(best_ind), " / ", nbits)
 println("Selected features (worst): ", count(worst_ind), " / ", nbits)
 
-p1 = plot(hist.min_hist, label="min RMSE", xlabel="gen", ylabel="RMSE")
+p1 = plot(hist.min_hist, label="min RMSE", xlabel="Generations", ylabel="RMSE")
 plot!(p1, hist.max_hist, label="max RMSE")
-savefig(p1, "rmse.png")
+plot!(p1, hist.mean_hist, label="mean RMSE")
 
-p2 = plot(hist.ent_hist, label="entropy", xlabel="gen", ylabel="H")
-savefig(p2, "entropy.png")
+
+# Baseline (all features)
+#hline!(p1, [baseline_rmse],
+#    label="baseline (all features)",
+#    linestyle=:dash,
+#    color=:black
+#)
+plot!(p1, legend = :outertopright)
+
+savefig(p1, "sweep4_rmse.png")
+
+p2 = plot(hist.ent_hist, label="entropy", xlabel="Generations", ylabel="H")
+savefig(p2, "sweep1_entropy.png")

@@ -78,19 +78,24 @@ survivors_generational(_parents, offspring, _score_par, _score_off, popsize::Int
     offspring[1:popsize]
 
 # Survivor selection B: elitist from parents+offspring (by score)
-function survivors_elitist(parents::Vector{BitVector}, offspring::Vector{BitVector},
-                           score_par::Vector{Float64}, score_off::Vector{Float64},
-                           popsize::Int, elite::Int)
-    elite = clamp(elite, 0, popsize)
+function survivors_elitist(
+    parents::Vector{BitVector},
+    offspring::Vector{BitVector},
+    score_par::Vector{Float64},
+    score_off::Vector{Float64},
+    popsize::Int,
+    k::Int
+)
+    k = clamp(k, 0, popsize)
 
-    # 1) Keep the best `elite` parents
-    parent_idx = sortperm(score_par, rev=true)
-    elites = parents[parent_idx[1:elite]]
+    # k best parents survives
+    pidx = sortperm(score_par, rev=true)
+    elites = parents[pidx[1:k]]
 
-    # 2) Fill the remaining slots with best offspring
-    remaining = popsize - elite
-    off_idx = sortperm(score_off, rev=true)
-    rest = offspring[off_idx[1:remaining]]
+    # fill the remaining with offspring
+    remaining = popsize - k
+    oidx = sortperm(score_off, rev=true)
+    rest = offspring[oidx[1:remaining]]
 
     return vcat(elites, rest)
 end
@@ -168,18 +173,6 @@ function run_ga(nbits::Int, fitness_fn::Function; params::GAParams=GAParams())
             end
         end
 
-        push!(max_hist, maximum(raw))
-        push!(mean_hist, mean(raw))
-        push!(min_hist, minimum(raw))
-        push!(ent_hist, entropy_bits(pop))
-
-        if gen == 1 || gen % params.log_every == 0 || gen == params.generations
-            # For minimization, "best" is min_hist; for maximization, it's max_hist
-            best_now = params.objective === :min ? min_hist[end] : max_hist[end]
-            println("gen=$gen  best=$(round(best_now, digits=5))  mean=$(round(mean_hist[end], digits=5))  entropy=$(round(ent_hist[end], digits=3))")
-            flush(stdout)
-        end
-
         offspring = BitVector[]
         families  = Tuple{BitVector,BitVector,BitVector,BitVector}[]
         
@@ -211,6 +204,7 @@ function run_ga(nbits::Int, fitness_fn::Function; params::GAParams=GAParams())
             end
         end
 
+            # --- survivor selection ---
         if params.survivor_mode == :generational
             pop = survivors_generational(pop, offspring, score, score_off, params.popsize)
         elseif params.survivor_mode == :elitist
@@ -227,6 +221,20 @@ function run_ga(nbits::Int, fitness_fn::Function; params::GAParams=GAParams())
         else
             error("Unknown survivor_mode: $(params.survivor_mode)")
         end
+
+        raw_after = [fitness_fn(ind) for ind in pop]
+
+        push!(max_hist, maximum(raw_after))
+        push!(mean_hist, mean(raw_after))
+        push!(min_hist, minimum(raw_after))
+        push!(ent_hist, entropy_bits(pop))
+
+        if gen == 1 || gen % params.log_every == 0 || gen == params.generations
+            best_now = params.objective === :min ? min_hist[end] : max_hist[end]
+            println("gen=$gen  best=$(round(best_now, digits=5))  mean=$(round(mean_hist[end], digits=5))  entropy=$(round(ent_hist[end], digits=3))")
+            flush(stdout)
+        end
+        
     end
 
     history = (; max_hist, mean_hist, min_hist, ent_hist, worst_raw)
